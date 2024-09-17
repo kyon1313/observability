@@ -2,9 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"math/rand"
 	apw_logging "otel-test/logs"
 	"otel-test/metrics"
 	"otel-test/otelBuilder"
@@ -14,8 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -50,6 +46,12 @@ func initOtel() *otelBuilder.Otel {
 }
 
 func main() {
+	tracerProvider := otel.GetTracerProvider()
+	tracer := tracerProvider.Tracer("apw-test")
+
+	repo := NewRepository(tracer)
+	svc := NewService(repo, tracer)
+	h := NewHandler(svc, initOtel().Logs)
 
 	metricBuilder := metrics.NewMetricsBuilder().
 		AddCounter("http_requests_total", "Total number of HTTP requests", []string{"path"}).
@@ -62,59 +64,13 @@ func main() {
 	r := gin.Default()
 
 	metricsMiddleware := metrics.NewMetricsMiddlewareDecorator(metricBuilder)
-	r.Use(metricsMiddleware.Middleware(), otelBuilder.TracingMiddleware(otelConfig.Logs, otelConfig.Tracing.GetTracer()))
+	r.Use(metricsMiddleware.Middleware(), otelBuilder.TracingMiddleware(otelConfig.Logs, tracer))
 
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	r.GET("/test", func(c *gin.Context) {
-		c.JSON(200, gin.H{"message": "Normal Request"})
-	})
+	r.GET("/test2", h.PossibleErrorRequest)
 
-	r.GET("/test2", posibleErrorRequest)
-
-	r.GET("/test3", slowRequest)
+	r.GET("/test3", h.SlowRequest)
 
 	r.Run(":8080")
-}
-
-func slowRequest(ctx *gin.Context) {
-	c := ctx.Request.Context()
-
-	c, span := otelConfig.Tracing.GetTracer().Start(c, "slow request")
-	defer span.End()
-
-	random := Rand(c) // Generate a random number between 1 and 5
-	sleepDuration := time.Duration(random) * time.Second
-	time.Sleep(sleepDuration)
-
-	span.SetAttributes(attribute.String("request_took", fmt.Sprintf("%ds", random)))
-	ctx.JSON(200, gin.H{"message": "Slow Request!"})
-}
-
-func posibleErrorRequest(ctx *gin.Context) {
-	c := ctx.Request.Context()
-
-	c, span := otelConfig.Tracing.GetTracer().Start(c, "posible error request")
-	defer span.End()
-
-	random := Rand(c)
-	if random <= 3 {
-		ctx.JSON(200, gin.H{"message": "Good Request!"})
-		return
-	}
-
-	err := errors.New("error request")
-	span.RecordError(err)
-	span.SetStatus(codes.Error, "error encountered!")
-	span.SetAttributes(attribute.String("error.message", err.Error()))
-
-	ctx.JSON(400, gin.H{"message": "Bad Request!"})
-}
-
-func Rand(ctx context.Context) int {
-
-	_, span := otelConfig.Tracing.GetTracer().Start(ctx, "random number")
-	defer span.End()
-
-	return rand.Intn(5) + 1
 }
