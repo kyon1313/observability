@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  jaeger:
+    image: jaegertracing/all-in-one:1.56
+    ports:
+      - "4318:4318"  # OpenTelemetry Collector (OTLP) endpoint
+      - "16686:16686" # Jaeger UI
+    container_name: jaeger
+    networks:
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    networks:
+      - monitoring
+
+  my-go-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+
+volumes:
+  prometheus-data:
