@@ -17,8 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-const errorSourceKey = "error.source"
-
 func TracingMiddleware(l apw_logging.OtelLogging, tracer trace.Tracer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if ShouldIgnoreRequest(c) {
@@ -52,11 +50,8 @@ func TracingMiddleware(l apw_logging.OtelLogging, tracer trace.Tracer) gin.Handl
 		logResponseBody(l, traceID, responseBody)
 
 		if w.statusCode >= 400 {
-			errorSource := c.Request.Context().Value(errorSourceKey)
-			if errorSource == nil {
-				errorSource = "handler"
-			}
-			handleError(span, c, w.statusCode, requestBody, errorSource.(string))
+
+			handleError(span, c, w.statusCode, requestBody)
 		} else {
 			setSpanAttributes(span, "response.body", parseJSON(responseBody))
 			span.SetAttributes(attribute.Int("status.Code", 1))
@@ -102,7 +97,7 @@ func logResponseBody(l apw_logging.OtelLogging, traceID, responseBody string) {
 	l.Debug("Response body", zap.String("request_id", traceID), zap.String("body", responseBody))
 }
 
-func handleError(span trace.Span, c *gin.Context, statusCode int, requestBody map[string]interface{}, errorSource string) {
+func handleError(span trace.Span, c *gin.Context, statusCode int, requestBody map[string]interface{}) {
 	var errMessage string
 	if len(c.Errors) > 0 {
 		errMessage = c.Errors[0].Error()
@@ -115,7 +110,6 @@ func handleError(span trace.Span, c *gin.Context, statusCode int, requestBody ma
 	span.SetAttributes(
 		attribute.Int("status.Code", 2),
 		attribute.String("error.message", err.Error()),
-		attribute.String("error.source", errorSource),
 	)
 	if requestBody != nil {
 		setSpanAttributes(span, "request.body", requestBody)
