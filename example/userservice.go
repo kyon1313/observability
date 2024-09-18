@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 
-	apw_tracing "otel-test/tracing"
+	apw_tracing "github.com/kyon1313/observability/tracing"
 )
 
 type UserService interface {

@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	apw_logging "otel-test/logs"
 	"strings"
 	"time"
+
+	apw_logging "github.com/kyon1313/observability/logs"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"

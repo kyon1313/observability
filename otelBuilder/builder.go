@@ -3,8 +3,9 @@ package otelBuilder
 import (
 	"context"
 	"fmt"
-	apw_logging "otel-test/logs"
-	apw_tracing "otel-test/tracing"
+
+	apw_logging "github.com/kyon1313/observability/logs"
+	apw_tracing "github.com/kyon1313/observability/tracing"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"

@@ -4,7 +4,8 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	_logging "otel-test/logs"
+
+	_logging "github.com/kyon1313/observability/logs"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"

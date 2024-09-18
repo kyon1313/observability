@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	apw_tracing "otel-test/tracing"
+	apw_tracing "github.com/kyon1313/observability/tracing"
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/codes"

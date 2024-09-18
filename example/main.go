@@ -2,10 +2,11 @@ package main
 
 import (
 	"context"
-	apw_logging "otel-test/logs"
-	"otel-test/metrics"
-	"otel-test/otelBuilder"
 	"time"
+
+	apw_logging "github.com/kyon1313/observability/logs"
+	"github.com/kyon1313/observability/metrics"
+	"github.com/kyon1313/observability/otelBuilder"
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"

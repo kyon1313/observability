@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	apw_tracing "otel-test/tracing"
+	apw_tracing "github.com/kyon1313/observability/tracing"
 )
 
 type UserRepository interface {

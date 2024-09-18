@@ -1,4 +1,4 @@
-module otel-test
+module github.com/kyon1313/observability
 
 go 1.20
 
