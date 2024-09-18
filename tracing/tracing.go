@@ -22,6 +22,7 @@ type OtelTracing interface {
 	GetTracer() trace.Tracer
 
 	AddAttributes(span trace.Span, err error, attrs ...attribute.KeyValue)
+	RecordError(span trace.Span, err error, source string)
 }
 
 type tracing struct {
@@ -88,65 +89,6 @@ func (t *tracing) GetTracer() trace.Tracer {
 	return t.tracer
 }
 
-// func (s *tracing) RecordError(ctx context.Context, span trace.Span, err *errs.ErrorService) {
-// 	s.SetStatus(span, codes.Error, err.Error())
-// 	s.AddAttributes(
-// 		span,
-// 		err,
-// 		semconv.ExceptionMessageKey.String(err.Error()),
-// 		semconv.ExceptionTypeKey.String(err.StatusText),
-// 		semconv.ExceptionStacktraceKey.String(err.GetStackTrace()),
-// 		attribute.Int("status.Code", 2),
-// 	)
-// 	span.AddEvent("ExceptionOccurred", trace.WithAttributes(
-// 		semconv.ExceptionTypeKey.String(err.StatusText),
-// 		semconv.ExceptionMessageKey.String(err.Error()),
-// 		attribute.String("exception.code", err.ErrorCode),
-// 		attribute.Int("status.Code", 2),
-// 	))
-// 	if span.SpanContext().HasSpanID() {
-// 		s.l.WithContext(ctx).Errorf("%s", err.Error())
-// 	}
-// 	span.RecordError(err)
-// }
-
-// func (s *tracing) AddErrorAttributes(ctx context.Context, span trace.Span, err *errs.ErrorService) {
-// 	if err.StatusCode >= 400 {
-// 		s.AddAttributes(
-// 			span,
-// 			err,
-// 			semconv.ExceptionMessageKey.String(err.Error()),
-// 			semconv.ExceptionTypeKey.String(err.StatusText),
-// 			semconv.ExceptionStacktraceKey.String(err.GetStackTrace()),
-// 		)
-// 		span.AddEvent("ExceptionOccurred", trace.WithAttributes(
-// 			semconv.ExceptionTypeKey.String(err.StatusText),
-// 			semconv.ExceptionMessageKey.String(err.Error()),
-// 			attribute.String("exception.code", err.ErrorCode),
-// 		))
-// 		if span.SpanContext().HasSpanID() {
-// 			s.l.WithContext(ctx).Errorf("[\n\nAEA\n\n]%s", err.Error())
-// 		}
-// 	} else {
-// 		s.AddAttributes(
-// 			span,
-// 			err,
-// 			attribute.String("error.type", err.StatusText),
-// 			attribute.String("error.message", err.Error()),
-// 			attribute.String("error.stacktrace", err.GetStackTrace()),
-// 		)
-// 		span.AddEvent("ErrorHandled", trace.WithAttributes(
-// 			attribute.String("error.type", err.StatusText),
-// 			attribute.String("error.message", err.Error()),
-// 			attribute.String("error.code", err.ErrorCode),
-// 		))
-// 		if span.SpanContext().HasSpanID() {
-// 			s.l.WithContext(ctx).Warnf("%s", err.Error())
-// 		}
-// 	}
-
-// }
-
 func (s *tracing) AddAttributes(span trace.Span, err error, attrs ...attribute.KeyValue) {
 	if err != nil {
 		span.SetAttributes(attrs...)
@@ -155,4 +97,10 @@ func (s *tracing) AddAttributes(span trace.Span, err error, attrs ...attribute.K
 
 	attrs = append(attrs, attribute.Int("status.Code", 1))
 	span.SetAttributes(attrs...)
+}
+
+func (t *tracing) RecordError(span trace.Span, err error, source string) {
+	span.RecordError(err)
+	span.SetStatus(codes.Error, err.Error())
+	span.SetAttributes(attribute.String("error.source", source))
 }

@@ -50,9 +50,9 @@ func main() {
 	tracerProvider := otel.GetTracerProvider()
 	tracer := tracerProvider.Tracer("apw-test")
 
-	userrepo := NewUserRepository(tracer)
-	userservice := NewUserService(userrepo, tracer)
-	userhandler := NewUserHandler(userservice)
+	userrepo := NewUserRepository(otelConfig.Tracing)
+	userservice := NewUserService(userrepo, otelConfig.Tracing)
+	userhandler := NewUserHandler(userservice, otelConfig.Tracing)
 
 	metricBuilder := metrics.NewMetricsBuilder().
 		AddCounter("http_requests_total", "Total number of HTTP requests", []string{"path"}).
@@ -68,9 +68,6 @@ func main() {
 	r.Use(metricsMiddleware.Middleware(), otelBuilder.TracingMiddleware(otelConfig.Logs, tracer))
 
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
-
-	r.POST("/user", userhandler.AddUser)
-
 	r.GET("/user", userhandler.GetUser)
 
 	r.Run(":8080")

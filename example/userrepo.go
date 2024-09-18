@@ -2,53 +2,36 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
+	apw_tracing "otel-test/tracing"
 )
 
 type UserRepository interface {
-	AddUser(ctx context.Context, user User) error
 	GetUserByName(ctx context.Context, name string) (*User, error)
 }
 
 type userRepository struct {
-	tracer trace.Tracer
+	tracer apw_tracing.OtelTracing
 }
 
-func NewUserRepository(tracer trace.Tracer) UserRepository {
+func NewUserRepository(tracer apw_tracing.OtelTracing) UserRepository {
 	return &userRepository{tracer: tracer}
 }
 
-func (r *userRepository) AddUser(ctx context.Context, u User) error {
-	_, span := r.tracer.Start(ctx, "repo.AddUser")
-	defer span.End()
-
-	for _, user := range users {
-		if user.ID == u.ID {
-			return errors.New("userid already exist")
-		}
-	}
-
-	users = append(users, u)
-	return nil
-}
-
 func (r *userRepository) GetUserByName(ctx context.Context, name string) (*User, error) {
-	_, span := r.tracer.Start(ctx, "repo.GetUserByName")
-	defer span.End()
+	_, span := r.tracer.StartSpan(ctx, "repo.GetUserByName")
+	defer r.tracer.EndSpan(span)
 
 	for _, user := range users {
 		if user.Name == name {
+			r.tracer.SetOKStatus(span, "User found")
 			return &user, nil
 		}
 	}
+
 	err := fmt.Errorf("name:%s user not found", name)
-	span.RecordError(err)
-	span.SetStatus(codes.Error, err.Error())
-	span.SetAttributes(attribute.String("error.source", "repository"))
+	r.tracer.RecordError(span, err, "repository")
+
 	return nil, err
 }

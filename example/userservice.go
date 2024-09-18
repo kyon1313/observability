@@ -3,45 +3,37 @@ package main
 import (
 	"context"
 
-	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/trace"
+	apw_tracing "otel-test/tracing"
 )
 
 type UserService interface {
-	AddUser(ctx context.Context, user User) error
 	GetUser(ctx context.Context, name string) (*User, error)
-	Tracer() trace.Tracer
+	Tracer() apw_tracing.OtelTracing
 }
 
 type userService struct {
 	repo   UserRepository
-	tracer trace.Tracer
+	tracer apw_tracing.OtelTracing
 }
 
-func NewUserService(repo UserRepository, t trace.Tracer) UserService {
-	return &userService{repo: repo, tracer: t}
-}
-
-func (s *userService) AddUser(ctx context.Context, user User) error {
-	ctx, span := s.tracer.Start(ctx, "service.AddUser")
-	defer span.End()
-	return s.repo.AddUser(ctx, user)
+func NewUserService(repo UserRepository, tracer apw_tracing.OtelTracing) UserService {
+	return &userService{repo: repo, tracer: tracer}
 }
 
 func (s *userService) GetUser(ctx context.Context, name string) (*User, error) {
-	ctx, span := s.tracer.Start(ctx, "service.GetUser")
-	defer span.End()
+	ctx, span := s.tracer.StartSpan(ctx, "service.GetUser")
+	defer s.tracer.EndSpan(span)
 
 	user, err := s.repo.GetUserByName(ctx, name)
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(codes.Error, err.Error())
-		ctx = context.WithValue(ctx, errorSourceKey, "service")
+		s.tracer.RecordError(span, err, "service")
 		return nil, err
 	}
+
+	s.tracer.SetOKStatus(span, "User found")
 	return user, nil
 }
 
-func (s *userService) Tracer() trace.Tracer {
+func (s *userService) Tracer() apw_tracing.OtelTracing {
 	return s.tracer
 }
