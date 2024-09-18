@@ -12,7 +12,7 @@ RUN go mod download
 COPY . .
 
 # Build the Go application
-RUN go build -o myapp
+RUN go build -o myapp ./example
 RUN ls -la /app  # Check if the binary is created
 
 # Use an Ubuntu base image for the final stage

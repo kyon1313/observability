@@ -1,8 +1,6 @@
 package apw_logging
 
 import (
-	"context"
-
 	"go.uber.org/zap"
 )
 
@@ -23,7 +21,7 @@ type OtelLogging interface {
 	Fatal(args ...interface{})
 	Fatalf(template string, args ...interface{})
 	Logf(template string, args ...interface{})
-	WithContext(ctx context.Context) OtelLogging
+	// WithContext(ctx context.Context) OtelLogging
 }
 
 type otelLog struct {
@@ -100,8 +98,8 @@ func (l *otelLog) Logf(template string, args ...interface{}) {
 	l.logger.Infof(template, args...)
 }
 
-func (l *otelLog) WithContext(ctx context.Context) OtelLogging {
-	return &otelLog{
-		logger: l.logger.With(ctx),
-	}
-}
+// func (l *otelLog) WithContext(ctx context.Context) OtelLogging {
+// 	return &otelLog{
+// 		logger: l.logger.With(ctx),
+// 	}
+// }

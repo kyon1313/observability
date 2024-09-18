@@ -18,6 +18,7 @@ import (
 const (
 	METRICURLENDPOINT = "http://localhost:8081/metrics"
 	JAEGERENDPOINT    = "jaeger:4318"
+	errorSourceKey    = "error.source"
 )
 
 var otelConfig = initOtel()
@@ -49,9 +50,9 @@ func main() {
 	tracerProvider := otel.GetTracerProvider()
 	tracer := tracerProvider.Tracer("apw-test")
 
-	repo := NewRepository(tracer)
-	svc := NewService(repo, tracer)
-	h := NewHandler(svc, initOtel().Logs)
+	userrepo := NewUserRepository(tracer)
+	userservice := NewUserService(userrepo, tracer)
+	userhandler := NewUserHandler(userservice)
 
 	metricBuilder := metrics.NewMetricsBuilder().
 		AddCounter("http_requests_total", "Total number of HTTP requests", []string{"path"}).
@@ -68,9 +69,9 @@ func main() {
 
 	r.GET("/metrics", gin.WrapH(promhttp.Handler()))
 
-	r.GET("/test2", h.PossibleErrorRequest)
+	r.POST("/user", userhandler.AddUser)
 
-	r.GET("/test3", h.SlowRequest)
+	r.GET("/user", userhandler.GetUser)
 
 	r.Run(":8080")
 }
