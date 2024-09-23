@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/kyon1313/observability/example/handler"
+	"github.com/kyon1313/observability/example/repo"
+	"github.com/kyon1313/observability/example/service"
 	apw_logging "github.com/kyon1313/observability/logs"
 	"github.com/kyon1313/observability/metrics"
 	"github.com/kyon1313/observability/otelBuilder"
@@ -51,9 +54,9 @@ func main() {
 	tracerProvider := otel.GetTracerProvider()
 	tracer := tracerProvider.Tracer("apw-test")
 
-	userrepo := NewUserRepository(otelConfig.Tracing)
-	userservice := NewUserService(userrepo, otelConfig.Tracing)
-	userhandler := NewUserHandler(userservice, otelConfig.Tracing)
+	userrepo := repo.NewUserRepository(otelConfig.Tracing)
+	userservice := service.NewUserService(userrepo, otelConfig.Tracing)
+	userhandler := handler.NewUserHandler(userservice, otelConfig.Tracing)
 
 	metricBuilder := metrics.NewMetricsBuilder().
 		AddCounter("http_requests_total", "Total number of HTTP requests", []string{"path"}).

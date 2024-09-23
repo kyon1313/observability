@@ -1,13 +1,14 @@
-package main
+package model
 
 type User struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
 	LastName string `json:"lastname"`
+	Password string `json:"password" filter:"true"`
 }
 
-var users = []User{
-	{ID: "1", Name: "John", LastName: "Doe"},
+var Users = []User{
+	{ID: "1", Name: "John", LastName: "Doe", Password: "123"},
 	{ID: "2", Name: "Jane", LastName: "Smith"},
 	{ID: "3", Name: "Alice", LastName: "Johnson"},
 	{ID: "4", Name: "Bob", LastName: "Brown"},

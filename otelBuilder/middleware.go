@@ -13,7 +13,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
@@ -51,15 +50,13 @@ func TracingMiddleware(l apw_logging.OtelLogging, tracer trace.Tracer) gin.Handl
 		logResponseBody(l, traceID, responseBody)
 
 		if w.statusCode >= 400 {
-
-			handleError(span, c, w.statusCode, requestBody)
+			span.SetAttributes(attribute.Int("status.Code", 2))
 		} else {
 			setSpanAttributes(span, "response.body", parseJSON(responseBody))
 			span.SetAttributes(attribute.Int("status.Code", 1))
 		}
 
 		span.SetAttributes(attribute.Int("http.status_code", w.statusCode))
-		//l.WithContext(ctx).Debugf("Response sent", zap.Int("status_code", w.statusCode), zap.String("data", responseBody))
 	}
 }
 
@@ -96,25 +93,6 @@ func readRequestBody(l apw_logging.OtelLogging, c *gin.Context, traceID string) 
 
 func logResponseBody(l apw_logging.OtelLogging, traceID, responseBody string) {
 	l.Debug("Response body", zap.String("request_id", traceID), zap.String("body", responseBody))
-}
-
-func handleError(span trace.Span, c *gin.Context, statusCode int, requestBody map[string]interface{}) {
-	var errMessage string
-	if len(c.Errors) > 0 {
-		errMessage = c.Errors[0].Error()
-	} else {
-		errMessage = fmt.Sprintf("HTTP error with status code %d", statusCode)
-	}
-	err := fmt.Errorf(errMessage)
-	span.RecordError(err)
-	span.SetStatus(codes.Error, err.Error())
-	span.SetAttributes(
-		attribute.Int("status.Code", 2),
-		attribute.String("error.message", err.Error()),
-	)
-	if requestBody != nil {
-		setSpanAttributes(span, "request.body", requestBody)
-	}
 }
 
 func setSpanAttributes(span trace.Span, prefix string, data map[string]interface{}) {
